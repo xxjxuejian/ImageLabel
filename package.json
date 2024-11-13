@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "decompress": "^4.2.1",
     "element-plus": "^2.8.7",
     "express": "^4.21.1",
     "normalize.css": "^8.0.1",
+    "unzipper": "^0.12.3",
     "vue": "^3.5.12"
   },
   "devDependencies": {
