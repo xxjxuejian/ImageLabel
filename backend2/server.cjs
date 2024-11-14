@@ -1,10 +1,10 @@
-// 前端请求资源，后端处理完以后再返回给前端，前端直接拿到数据就能用
-// 访问这个接口，进行一系列处理，返回前端需要的资源
+// 前端请求资源，后端处理完以后再返回给前端，前端直接拿到的是图片在服务器上的路径,然后可以根据这个路径发送网络请求
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const express = require('express')
 const decompress = require('decompress')
+const { log } = require('console')
 
 // 服务器上的数据集压缩包路径, 中间要加/
 const datasetPath = path.join(__dirname, '/dataset/train2017.zip')
@@ -52,18 +52,19 @@ app.get('/api/v1/images', async (req, res) => {
     }
 
     // 文件已经存在了
-    // 获取解压目录中的文件列表
-    const files = fs
-      .readdirSync(extractDirPath)
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file))
-      .map((file) => ({
-        filename: file,
-        url: `/images/${file}`,
-      }))
-
+    //extractDirPath目录下的所有文件名称字符串构成的数组
+    const files = fs.readdirSync(extractDirPath)
+    // 然后再过滤一下，只要图片
+    const imageFiles = files.filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file))
+    // 构成成返回给前端的结构,一张图片就是一个对象 {filename,path}的结构
+    const imageData = imageFiles.map((file) => ({
+      filename: file,
+      path: `/images/${file}`,
+    }))
+    // 发送响应
     res.status(200).json({
       status: 'success',
-      data: files,
+      data: imageData,
     })
   } catch (error) {
     console.error('解压过程中出现错误:', error)
@@ -75,7 +76,10 @@ app.get('/api/v1/images', async (req, res) => {
   }
 })
 
-// 设置静态文件服务
+// 设置静态文件服务, extractDirPath = C:\Users\admin\Desktop\xxj\Image-Label\image-label-system\backend2\extracted\train2017
+// 映射/images 到 extractDirPath,如果访问localhost:3000/images/xxx.jpg,就会去extractDirPath目录下找xxx.jpg
+// / 启动这个server.cjs以后, / 就表示server.cjs所在的目录路径,也等于locahost:3000
+// server.cjs所在的目录路径就可以认为是 / 路径
 app.use('/images', express.static(extractDirPath))
 
 app.listen(PORT, () => {
