@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "body-parser": "^1.20.3",
     "decompress": "^4.2.1",
     "element-plus": "^2.8.7",
     "express": "^4.21.1",
