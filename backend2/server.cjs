@@ -2,6 +2,7 @@
 // 访问这个接口，进行一系列处理，返回前端需要的资源
 const http = require('http')
 const fs = require('fs')
+const cors = require('cors')
 const path = require('path')
 const express = require('express')
 const decompress = require('decompress')
@@ -34,6 +35,7 @@ function isFolderEmpty(folderPath) {
 const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
+app.use(cors())
 const PORT = 3000
 
 async function extractZip(fromPath, toPath) {
@@ -285,8 +287,8 @@ app.post('/save-all', (req, res) => {
       fs.writeFileSync(fileAnoPath, content, 'utf-8')
     })
 
-    // 保存csv文件
-    writeToCsv(qualityCsvPath, qualityArr.join('\n'))
+    // 保存csv文件,暂时有问题
+    // writeToCsv(qualityCsvPath, qualityArr.join('\n'))
     res.status(200).json({ message: '保存成功' })
   } catch (error) {}
 })

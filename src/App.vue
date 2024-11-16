@@ -4,13 +4,13 @@ import ImageLabel from './components/ImageLabel.vue'
 
 <template>
   <div class="App">
-    App组件
-    <!-- <ImageLabel></ImageLabel> -->
+    <ImageLabel></ImageLabel>
   </div>
 </template>
 
 <style scoped lang="less">
-.App {
-  color: red;
-}
+// app的样式会全局使用
+// .App {
+//   color: red;
+// }
 </style>
