@@ -199,15 +199,15 @@ app.get('/quality/:imageName', (req, res) => {
     // 查找图片对应的质量分数
     // 实际上如果没有找到这张图片的质量分数，前端就认为是空的，前端会显示一个默认值，后端统一返回默认值
     const qualityRecord = lines.find((line) => line.startsWith(imageName + ','))
-    console.log(qualityRecord)
+    console.log('qualityRecord', qualityRecord)
     if (!qualityRecord) {
       // return res.status(404).json({ error: '质量分数未找到' })
       return res.json({ imageName, quality: 5 }) // 默认分数为 5
     }
 
     // 解析记录并返回
-    // const [, quality] = qualityRecord.split(',')
-    // res.json({ imageName, quality: parseInt(quality, 10) })
+    const [, quality] = qualityRecord.split(',')
+    res.json({ imageName, quality: parseInt(quality, 10) })
   } catch (error) {
     console.error('读取质量分数时出错:', error)
     res.status(500).json({ error: '获取质量分数失败' })
@@ -245,6 +245,16 @@ app.post('/quality', (req, res) => {
       }
     })
   }
+  // 不存在要创建文件
+  else {
+    // 获取目录路径
+    const dirPath = path.dirname(qualityCsvPath)
+    console.log(dirPath)
+    // 确保目录存在
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true }) // 使用 recursive 确保创建所有中间目录
+    }
+  }
   // 此时如果记录已找到，records内部是最新的全部数据
   // 如果记录未找到，添加新记录
   if (!recordFound) {
@@ -253,6 +263,8 @@ app.post('/quality', (req, res) => {
 
   // 覆盖写入整个CSV文件
   fs.writeFileSync(qualityCsvPath, records.join('\n'), 'utf8')
+  console.log(qualityCsvPath)
+  console.log(records, records.join('\n'))
   res.json({ message: '质量分数保存成功' })
 })
 
@@ -297,11 +309,13 @@ app.post('/save-all', (req, res) => {
       fs.writeFileSync(fileAnoPath, content, 'utf-8')
     })
 
-    // 保存csv文件,暂时有问题
-    // writeToCsv(qualityCsvPath, qualityArr.join('\n'))
+    // 保存csv文件
+    writeToCsv(qualityCsvPath, qualityArr.join('\n'))
+
     res.status(200).json({ message: '保存成功' })
   } catch (error) {}
 })
+
 app.get('/api/v1/images', async (req, res) => {
   try {
     // 如果请求的源文件都不存在，直接404
@@ -347,14 +361,18 @@ app.get('/api/v1/images', async (req, res) => {
 
 // 设置静态文件服务,可以少写 /images/:filename 接口
 // app.use('/images', express.static(extractDirPath))
-function writeToCsv(path, content) {
-  if (!fs.existsSync(path)) {
-    fs.mkdirSync(path, { recursive: true }) // 递归创建目录
+function writeToCsv(filepath, content) {
+  // 获取目录路径
+  const dirPath = path.dirname(filepath)
+  console.log(dirPath)
+  // 确保目录存在
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true }) // 使用 recursive 确保创建所有中间目录
   }
-
   //
-  fs.writeFileSync(path, content, 'utf8')
-  return 'ok'
+  console.log(filepath)
+  fs.writeFileSync(filepath, content, 'utf8')
+  // return 'ok'
 }
 
 app.listen(PORT, () => {

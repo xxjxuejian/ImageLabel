@@ -67,10 +67,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onBeforeMount } from 'vue'
+import { ref, reactive } from 'vue'
 
 const image = ref(null)
-
 const canvasRef = ref(null)
 const prevBtnRef = ref(null)
 const nextBtnRef = ref(null)
@@ -79,13 +78,13 @@ const canvasHeight = ref(600) // 设置 Canvas 高度
 const showCategoryInput = ref(false) // 控制是否显示自定义对话框
 const newCategory = ref('') // 用于存储用户输入的类别
 
-const allPath = ref([])
-const curGroupPath = ref([])
-const curImgIndex = ref(0) // 当前组图片的索引
-const groupCount = ref(0)
-const countPerGroup = 2
-const curGroup = ref(1)
-const markStatus = ref(1)
+const allPath = ref([]) //从后端请求到的全部图片的相关信息数组
+const curGroupPath = ref([]) //当前组所有图片的相关信息数组
+const curImgIndex = ref(0) // 当前组中当前图片的索引
+const countPerGroup = 2 //控制每组图片数量
+const groupCount = ref(0) //一共有多少组
+const curGroup = ref(1) //当前是第几组
+const markStatus = ref(1) //默认显示全部图片，标注的+未标注的
 
 const baseUrl = 'http://localhost:3000'
 const imageUrl = baseUrl + '/images/'
@@ -146,6 +145,21 @@ async function getImageList() {
   }
 }
 
+// 如果没有可用图片给一个默认的canvas样式
+function defaultCanvas() {
+  // canvasWidth.value = 400
+  // canvasHeight.height = 300
+
+  const canvas = canvasRef.value
+  console.log(canvas.height)
+  const ctx = canvas.getContext('2d')
+  if (canvas && ctx) {
+    // 绘制图片
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = 'black'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
+}
 // 每次重载图片时，重新设置canvas的宽度和高度
 function initCanvas(src) {
   return new Promise((resolve, reject) => {
@@ -179,16 +193,26 @@ async function getCurImgRegions(filename) {
 
 // 加载当前图片的各种信息，比如图片质量分数，标注数据等
 async function loadCurrentImageInfo() {
-  console.log('loadCurrentImage----')
+  console.log('loadCurrentImage----', curGroupPath.value.length)
+  if (curGroupPath.value.length === 0) {
+    curImgIndex.value = -1
+    defaultCanvas()
+    return
+  }
+  console.log('caonima')
   // 只有curGroupPath有值才能用
   const fileUrl = curGroupPath.value[curImgIndex.value].path //http://localhost:7173/images/000000000025.jpg
   // const fileName = fileUrl.match(/(\d+)\.(jpg|jpeg|png|gif)$/i) //获取文件名，不含后缀
+  console.log(curGroupPath.value[curImgIndex.value])
   const fileName = fileUrl.match(/\d+\.(jpg|jpeg|png|gif)$/i)[0]
 
   // 首先从anotations中获取，如果没有，就从服务器获取
   if (allImgsInfo.get(fileName) === undefined) {
+    console.log(111)
+    console.log(fileName)
     let ano = (await getCurImgRegions(fileName)) || []
     let quality = (await getCurImgQuality(fileName)) || 5
+    console.log('111,', ano, quality)
     allImgsInfo.set(fileName, { imgQuality: Number(quality), annotations: ano })
   }
   curImgInfo.value = allImgsInfo.get(fileName)
@@ -205,6 +229,7 @@ async function loadCurrentImageInfo() {
 
 // 切换组,就是切片，重新从allpath中截取一部分，赋值给curGroupPath，同时重置当前组的索引
 const changeGroup = (group) => {
+  console.log('changeGroup')
   curGroup.value = group
   curImgIndex.value = 0
   curGroupPath.value = allPath.value.slice((group - 1) * countPerGroup, group * countPerGroup)
@@ -404,7 +429,25 @@ const handleNextClick = () => {
 const changeType = (statusCode) => {
   // 状态就前端保存，最开始
   // 修改的是curGroupPath数组
-  curGroupPath.value
+
+  markStatus.value = statusCode
+  let tmpArr = allPath.value.slice(
+    (curGroup.value - 1) * countPerGroup,
+    curGroup.value * countPerGroup
+  )
+  if (statusCode === 1) {
+    curGroupPath.value = tmpArr
+  } else if (statusCode === 2) {
+    curGroupPath.value = tmpArr.filter((item) => {
+      return item.status === false
+    })
+  } else if (statusCode == 3) {
+    curGroupPath.value = tmpArr.filter((item) => {
+      return item.status === true
+    })
+  }
+  curImgIndex.value = 0
+  loadCurrentImageInfo()
 }
 
 // 保存/更新 当前图片的质量分数到服务器
