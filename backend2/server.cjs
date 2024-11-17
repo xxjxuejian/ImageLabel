@@ -71,9 +71,19 @@ app.get('/images', async (req, res) => {
       .filter((file) => /\.(jpg|jpeg|png|gif)$/.test(file))
       .map((file) => {
         const fileName = file
+        const basename = fileName.match(/(\d+)\.(jpg|jpeg|png|gif)$/i)[1]
+        // console.log('fileName--------', fileName, basename)
+        //当前图片的标注转态
+        let status = false
+        let txtPath = `${labelsDir}/${basename}.txt`
+        // console.log(txtPath)
+        // 文件不存在，说明没有标注，只要文件存在，不论有没有内容都认为是标记了
+        if (fs.existsSync(txtPath)) status = true
         return {
           name: fileName,
-          status: false,
+          // status表示有没有标志，如果没有这个图片对应的.txt文件，肯定是未标注
+          // 但是也可能是有文件，但是内容为空，所以检查后端有没有质量分数，有的话，就是标注了
+          status: status,
         }
       })
 
