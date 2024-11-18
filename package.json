@@ -12,6 +12,7 @@
     "server": "node backend/server"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "archiver": "^7.0.1",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",

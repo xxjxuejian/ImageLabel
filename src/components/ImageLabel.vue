@@ -37,6 +37,17 @@
           <label>图片质量分数:</label>
           <input v-model="curImgInfo.imgQuality" type="number" min="1" max="5" placeholder="5" />
         </div>
+        <div class="annotations">
+          <label>区域标注值</label>
+          <template v-for="(item, index) in curImgInfo.annotations" :key="index">
+            <div class="item">
+              <span class="cate-name">{{ index + 1 }}--{{ item.category }}</span>
+              <el-icon class="del-icon" title="删除" @click="handleLabelDelete(index)"
+                ><Delete
+              /></el-icon>
+            </div>
+          </template>
+        </div>
         <div class="btns">
           <button @click="handlePrevClick" ref="prevBtnRef" :disabled="curImgIndex <= 0">
             上一张
@@ -596,6 +607,19 @@ async function main() {
   changeGroup(curGroup.value)
 }
 main()
+
+const handleLabelDelete = (index) => {
+  ElMessageBox.confirm('删除此区域?')
+    .then(() => {
+      // done()
+      curImgInfo.value.annotations.splice(index, 1)
+      // console.log(curImgInfo.value)
+      draw(curImgInfo.value)
+    })
+    .catch(() => {
+      // catch error
+    })
+}
 </script>
 
 <style scoped lang="less">
@@ -698,6 +722,25 @@ main()
     }
     button {
       padding: 3px;
+    }
+  }
+}
+
+.annotations {
+  margin-bottom: 10px;
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+
+    .del-icon {
+      width: 20px;
+      height: 20px;
+    }
+    .del-icon:hover {
+      color: #f00;
+      cursor: pointer;
     }
   }
 }
