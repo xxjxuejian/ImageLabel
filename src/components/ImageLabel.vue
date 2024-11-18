@@ -121,10 +121,8 @@ async function getImageList() {
       method: 'GET',
     })
 
-    console.log('response', response)
     if (response.ok) {
       const data = await response.json()
-      console.log('data', data)
 
       allPath.value = data.map((item) => {
         return {
@@ -185,7 +183,9 @@ async function getCurImgQuality(filename) {
 
 // 获取当前图片的标注数据
 async function getCurImgRegions(filename) {
-  const res = await fetch(CurImgAnnotationsUrl + filename)
+  const dirName = filename.split('.')[0]
+  // const res = await fetch(`${CurImgAnnotationsUrl}${dirName}.txt`) //后端拼接的txt后缀
+  const res = await fetch(`${CurImgAnnotationsUrl}${dirName}`)
   const data = await res.json()
   console.log('获取当前图片的标注数据', data)
   return data.annotations
@@ -200,31 +200,30 @@ async function loadCurrentImageInfo() {
     return
   }
   console.log('caonima')
-  // 只有curGroupPath有值才能用
-  const fileUrl = curGroupPath.value[curImgIndex.value].path //http://localhost:7173/images/000000000025.jpg
-  // const fileName = fileUrl.match(/(\d+)\.(jpg|jpeg|png|gif)$/i) //获取文件名，不含后缀
-  console.log(curGroupPath.value[curImgIndex.value])
-  const fileName = fileUrl.match(/\d+\.(jpg|jpeg|png|gif)$/i)[0]
 
-  // 首先从anotations中获取，如果没有，就从服务器获取
-  if (allImgsInfo.get(fileName) === undefined) {
-    console.log(111)
-    console.log(fileName)
-    let ano = (await getCurImgRegions(fileName)) || []
-    let quality = (await getCurImgQuality(fileName)) || 5
-    console.log('111,', ano, quality)
-    allImgsInfo.set(fileName, { imgQuality: Number(quality), annotations: ano })
+  try {
+    // 只有curGroupPath有值才能用
+    const fileUrl = curGroupPath.value[curImgIndex.value].path //http://localhost:7173/images/000000000025.jpg
+    // const fileName = fileUrl.match(/(\d+)\.(jpg|jpeg|png|gif)$/i) //获取文件名，不含后缀
+    const fileName = fileUrl.match(/\d+\.(jpg|jpeg|png|gif)$/i)[0]
+
+    // 首先从allImgsInfo中获取，如果没有，就从服务器获取
+    if (allImgsInfo.get(fileName) === undefined) {
+      let ano = (await getCurImgRegions(fileName)) || []
+      let quality = (await getCurImgQuality(fileName)) || 5
+      console.log('111,', ano, quality)
+      allImgsInfo.set(fileName, { imgQuality: Number(quality), annotations: ano })
+    }
+    curImgInfo.value = allImgsInfo.get(fileName)
+    console.log('curImgInfo-----', curImgInfo.value)
+
+    image.value = await initCanvas(fileUrl)
+    // 绘制图片与该图片的标注区域
+    draw(curImgInfo.value)
+  } catch (error) {
+    console.error(error)
   }
-  curImgInfo.value = allImgsInfo.get(fileName)
-  console.log('curImgInfo.', curImgInfo.value)
-
-  image.value = await initCanvas(fileUrl)
-  draw(curImgInfo.value)
-  // 绘制图片与该图片的标注区域
-  // try {
-  // } catch (error) {
-  //   console.error(error)
-  // }
+  console.log('loadCurrentImage----')
 }
 
 // 切换组,就是切片，重新从allpath中截取一部分，赋值给curGroupPath，同时重置当前组的索引
@@ -259,6 +258,7 @@ const draw = (curImgInfo) => {
       drawRectangleWithLabel(ctx, region)
     })
   }
+  console.log('绘制完成')
 }
 // 绘制矩形区域和内部的文本
 const drawRectangleWithLabel = (ctx, region) => {
@@ -272,7 +272,7 @@ const drawRectangleWithLabel = (ctx, region) => {
   // 在矩形区域中心绘制类别文本
   const textX = (region.startX + region.endX) / 2
   const textY = (region.startY + region.endY) / 2
-  ctx.font = '14px Arial'
+  ctx.font = '16px Arial'
   ctx.fillStyle = 'blue'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -392,16 +392,14 @@ const confirmCategory = () => {
   }
   newCategory.value = ''
   showCategoryInput.value = false
-
-  // console.log(annotations.data[curImgIndex.value])
 }
 
 // 取消类别输入
 const cancelCategory = () => {
   currentRect.value = null
+  newCategory.value = ''
   showCategoryInput.value = false
   draw(curImgInfo.value) // 更新画布
-  // console.log(annotations.data[curImgIndex.value])
 }
 
 // 上一张
@@ -569,27 +567,22 @@ const createTXT = async (fileName, txt) => {
 }
 
 const save = async () => {
+  console.log(allImgsInfo)
+  const mapObject = Object.fromEntries(allImgsInfo) //map转为普通对象才能json转换
   try {
-    const response = await fetch(baseUrl + '/download-zip', {
-      method: 'GET',
+    const response = await fetch(baseUrl + '/save-all', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(mapObject),
     })
-
     if (response.ok) {
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'archive.zip'
-      a.click()
-    } else {
-      alert('导出失败')
+      alert('保存成功')
     }
   } catch (error) {
     console.error('请求失败:', error)
-    alert('请求失败')
   }
-
-  console.log(annotations.data[curImgIndex.value].regions)
 }
 
 const deleteCategory = (index) => {
