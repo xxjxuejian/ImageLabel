@@ -1,15 +1,26 @@
 <template>
   <div class="image-label">
-    <div class="group">
-      <span>当前组：</span>
-      <div v-for="item in groupCount" :key="item">
-        <button
-          class="img-change"
-          @click="changeGroup(item)"
-          :class="curGroup === item ? 'active' : ''"
-        >
-          第{{ item }}组
-        </button>
+    <div class="header">
+      <div class="group">
+        <span>当前组：</span>
+        <div v-for="item in groupCount" :key="item">
+          <button
+            class="img-change"
+            @click="changeGroup(item)"
+            :class="curGroup === item ? 'active' : ''"
+          >
+            第{{ item }}组
+          </button>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="arrow" @click="handlePrevClick">
+          <el-icon><ArrowLeft /></el-icon>
+        </div>
+        <span>{{ curImgIndex + 1 }}/{{ curGroupPath.length }}</span>
+        <div class="arrow" @click="handleNextClick">
+          <el-icon><ArrowRight /></el-icon>
+        </div>
       </div>
     </div>
     <div class="wrapper">
@@ -22,7 +33,7 @@
         @mouseup="finishDrawing"
         @mouseout="handleMouseOut"
       ></canvas>
-      <div class="controls">
+      <!-- <div class="controls">
         <div class="status">
           <span>标注状态:</span>
           <button :class="{ active: markStatus === 1 }" @click="changeType(1)">全部</button>
@@ -49,21 +60,9 @@
           </template>
         </div>
         <div class="btns">
-          <button @click="handlePrevClick" ref="prevBtnRef" :disabled="curImgIndex <= 0">
-            上一张
-          </button>
-          <button
-            @click="handleNextClick"
-            ref="nextBtnRef"
-            :disabled="curImgIndex >= curGroupPath.length - 1"
-          >
-            <!-- {{ curImgIndex === curGroupPath.length - 1 ? '保存' : '下一张' }} -->
-            下一张
-          </button>
-          <!-- <button @click="save">导出至本地</button> -->
           <button @click="save">保存全部</button>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <div v-if="showCategoryInput" class="dialog">
@@ -416,11 +415,11 @@ const cancelCategory = () => {
 // 上一张
 const handlePrevClick = () => {
   // saveTxt()
-  curImgIndex.value -= 1
-  if (curImgIndex.value <= 0) {
-    curImgIndex.value = 0
+
+  if (curImgIndex.value > 0) {
+    curImgIndex.value -= 1
+    loadCurrentImageInfo()
   }
-  loadCurrentImageInfo()
 }
 
 // 下一张
@@ -626,13 +625,43 @@ const handleLabelDelete = (index) => {
 .image-label {
   width: 100%;
   height: 100%;
-  //   background-color: rebeccapurple;
-  .group {
+
+  .header {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 40px;
+    padding: 0 30px;
+    height: 60px;
+
+    .group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .nav {
+      width: 160px;
+      border-radius: 5px;
+      margin-left: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: lightgray;
+
+      .arrow {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .arrow:hover {
+        color: red;
+      }
+    }
   }
+
   .img-change {
     margin-left: 5px;
   }
